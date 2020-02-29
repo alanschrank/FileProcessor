@@ -45,6 +45,23 @@ namespace SharedLibrary.Actors
 
             if (workType == WorkType.Cluster)
             {
+                //var childProps = Props.Create<CreateUserActor>();
+                //var supervisor = BackoffSupervisor.Props(
+                //    Backoff.OnStop(
+                //            childProps,
+                //            childName: "CreateUser",
+                //            minBackoff: TimeSpan.FromSeconds(3),
+                //            maxBackoff: TimeSpan.FromSeconds(30),
+                //            randomFactor: 0.2)
+                //        .WithAutoReset(TimeSpan.FromSeconds(10))
+                //        .WithSupervisorStrategy(new OneForOneStrategy(exception =>
+                //        {
+                //            if (exception is BadDataException)
+                //                return Directive.Restart;
+                //            return Directive.Escalate;
+                //        })));
+
+
                 //***Cluster Round Robin example***//
                 var clusterMaxWorkerInstancesPerNode = 1;
                 var clusterMaxWorkerInstances = 3;
@@ -193,7 +210,6 @@ namespace SharedLibrary.Actors
 
         private void LogToEverything(IUntypedActorContext context, string message)
         {
-            //context.ActorSelection("akka.tcp://mysystem@127.0.0.1:4063/user/StatusActor").Tell(new SignalRMessage(StaticMethods.GetServiceName(), "FileReader", message));
             _mediator.Tell(new Publish(Topics.Status, new SignalRMessage($"{DateTime.Now}: {StaticMethods.GetSystemUniqueName()}", "FileReader", message)), context.Self);
             _logger.Info(message);
         }

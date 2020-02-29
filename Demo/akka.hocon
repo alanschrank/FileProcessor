@@ -1,0 +1,11 @@
+myactorsystem{
+  actorsystem: "mysystem" 
+  systemname: "Demo"
+  dbconnection: "Server=.;Database=AkkaFileProcessor;Integrated Security=SSPI;"
+}
+
+akka {
+	loglevel = debug
+	
+}
+	

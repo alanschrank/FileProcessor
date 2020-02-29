@@ -23,8 +23,28 @@ namespace SharedLibrary.Actors
         private int _currentCount;
         private CancellationTokenSource _cancelToken;
         public IStash Stash { get; set; }
-
         private IActorRef _workerRouter;
+
+        protected override SupervisorStrategy SupervisorStrategy()
+        {
+            return new OneForOneStrategy(
+                maxNrOfRetries: 10,
+                withinTimeRange: TimeSpan.FromSeconds(60),
+                localOnlyDecider: ex =>
+                {
+                    switch (ex)
+                    {
+                        case ArithmeticException ae:
+                            return Directive.Resume;
+                        case BadDataException nre:
+                            return Directive.Restart;
+                        case ArgumentException are:
+                            return Directive.Stop;
+                        default:
+                            return Directive.Escalate;
+                    }
+                });
+        }
 
         /// <summary>
         /// This actor demonstrates how to create child actors that are put into a broadgroup.
@@ -80,6 +100,12 @@ namespace SharedLibrary.Actors
 
         private void Working()
         {
+            Receive<BadDataShutdown>(failed =>
+            {
+                // Send Again after giving the failed actor a second to come back up.
+                Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(1), failed.FailedActor, new ProcessLine(failed.CurrentRecord), Self);
+            });
+
             Receive<ProcessLine>(file =>
             {
                 Stash.Stash();
@@ -124,7 +150,6 @@ namespace SharedLibrary.Actors
 
         private void LogToEverything(IUntypedActorContext context, string message)
         {
-            //context.ActorSelection("akka.tcp://mysystem@127.0.0.1:4063/user/StatusActor").Tell(new SignalRMessage(StaticMethods.GetServiceName(), "LineReader", message));
             _mediator.Tell(new Publish(Topics.Status, new SignalRMessage($"{DateTime.Now}: {StaticMethods.GetSystemUniqueName()}", "LineReader", message)), context.Self);
             _logger.Info(message);
         }
